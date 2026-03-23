@@ -45,15 +45,7 @@ Before any configuration, perform these checks in order:
 1. **Exit plan mode** — if the current session is in plan mode, call ExitPlanMode
    before proceeding. Do not begin configuration until plan mode is fully exited.
 
-2. **Check environment** — verify that `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
-   is set to `1`. If not, use AskUserQuestion:
-   - **Question**: "Agent teams require the CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 environment variable, which is not set. How should we proceed?"
-   - **Header**: "Env"
-   - **Options**:
-     - `Continue anyway` — Proceed without the variable (may fail at agent spawn)
-     - `Stop` — Abort so you can set the variable and retry
-
-3. **Resolve spec and focus** — look for a file path in the user's message (they
+2. **Resolve spec and focus** — look for a file path in the user's message (they
    may say "implement specs/foo.md", pass `--spec path`, or just mention a
    filename). If no path is found, use the current session plan as the spec. If
    neither exists, use AskUserQuestion to ask the user to provide a spec file path.
@@ -65,7 +57,7 @@ Before any configuration, perform these checks in order:
    `{FOCUS}`. If the user's message contains only a file path with no extra
    instructions, `{FOCUS}` is empty.
 
-4. **Read and validate the spec** — attempt to load the resolved spec file. If the
+3. **Read and validate the spec** — attempt to load the resolved spec file. If the
    file does not exist or cannot be read, use AskUserQuestion:
    - **Question**: "Could not read {path}. Provide the correct spec file path?"
    - **Header**: "Spec"
@@ -150,7 +142,7 @@ If the user selects "Custom team", present:
   "Full: all 14 roles") plus let the user type a custom list via "Other".
 
 **Role validation:** After any customisation, validate all role names against the
-role catalogue in `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/role-catalogue.md`.
+role catalogue in `${CLAUDE_SKILL_DIR}/references/role-catalogue.md`.
 If any name does not match a known role, use AskUserQuestion:
 - **Question**: "These roles aren't in the catalogue: {list}. What should we do?"
 - **Header**: "Roles"
@@ -222,7 +214,7 @@ and skip this question.
 
 ## Expansion
 
-With all configuration confirmed, read `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/prompt-template.md`
+With all configuration confirmed, read `${CLAUDE_SKILL_DIR}/references/prompt-template.md`
 and expand the lead-agent prompt by substituting all `{PLACEHOLDER}` values:
 
 - `{SPEC_PATH}` — resolved spec file path
@@ -268,7 +260,7 @@ Actually call the Agent tool to start the process.
 
 ## Team Model
 
-Three tiers of roles — read `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/role-catalogue.md`
+Three tiers of roles — read `${CLAUDE_SKILL_DIR}/references/role-catalogue.md`
 for full definitions.
 
 **Tier 1 — Implementation specialists** (plan-gated): Submit a full plan to the lead
@@ -286,7 +278,7 @@ Roles: architecture-critic, security-auditor, ux-skeptic, performance-devil.
 
 ## Reference Files
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/prompt-template.md` — Lead-agent prompt template with placeholder variables and block definitions
-- `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/role-catalogue.md` — Full role definitions for all three tiers
-- `${CLAUDE_PLUGIN_ROOT}/skills/launch-team/references/plan-template.md` — Implementation specialist plan format and lead approval responses
+- `${CLAUDE_SKILL_DIR}/references/prompt-template.md` — Lead-agent prompt template with placeholder variables and block definitions
+- `${CLAUDE_SKILL_DIR}/references/role-catalogue.md` — Full role definitions for all three tiers
+- `${CLAUDE_SKILL_DIR}/references/plan-template.md` — Implementation specialist plan format and lead approval responses
 - `${CLAUDE_PLUGIN_ROOT}/agents/` — One agent identity file per role (14 total)
