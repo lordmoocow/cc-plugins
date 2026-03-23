@@ -24,16 +24,11 @@ real agent processes. Two rules apply throughout:
    for confirmation via regular messages. If this skill says "ask", "present", or
    "confirm" — that means call the AskUserQuestion tool.
 
-2. **The team MUST be created with TeamCreate, teammates spawned with Agent.**
-   After expanding the prompt template:
-   a. Call TeamCreate to create the team (team_name derived from the spec)
-   b. Call the Agent tool to spawn the lead agent with `team_name` and `name: "lead"`
-   c. The lead spawns teammates using Agent with `team_name`, `name` (role name),
-      and `subagent_type` (role name) — which loads the agent definition from
-      `${CLAUDE_PLUGIN_ROOT}/agents/`
-   d. Work is coordinated via TaskCreate/TaskUpdate/TaskList, not ad-hoc messages
-   e. Teammates communicate via SendMessage using names (not agent IDs)
-   See the Launch section for the full sequence.
+2. **The team MUST be created with TeamCreate before any work begins.**
+   After expanding the prompt template, call TeamCreate to set up the team.
+   You then become the team lead and follow the expanded template directly —
+   do NOT spawn a separate lead agent. The prompt template's TEAM WORKFLOW
+   section covers how to spawn teammates, assign tasks, and coordinate.
 
 ## Navigation
 
@@ -218,7 +213,7 @@ and skip this question.
 ## Expansion
 
 With all configuration confirmed, read `${CLAUDE_SKILL_DIR}/references/prompt-template.md`
-and expand the lead-agent prompt by substituting all `{PLACEHOLDER}` values:
+and expand it by substituting all `{PLACEHOLDER}` values:
 
 - `{SPEC_PATH}` — resolved spec file path
 - `{FOCUS}` — user-provided focus instructions (omit block entirely if empty)
@@ -236,26 +231,24 @@ The block generation rules are defined in `references/prompt-template.md` under
 "Block definitions". Read `references/role-catalogue.md` for full role descriptions
 when generating {ROLES_BLOCK} content.
 
+The expanded result becomes your operating instructions as team lead.
+
 ## Launch
 
-After expanding the prompt, create and launch the team:
-
-1. **Create the team** — call TeamCreate with:
-   - `team_name`: `{TEAM_NAME}` (derived from spec filename, e.g. "user-auth")
+1. **Create the team** — call the TeamCreate tool with:
+   - `team_name`: `{TEAM_NAME}`
    - `description`: one-line summary of what the team is building
 
-2. **Spawn the lead** — call the Agent tool with:
-   - `prompt`: the fully expanded lead-agent prompt (not as text output — as the tool parameter)
-   - `model`: the confirmed model from Step 3 Question B (e.g. `"sonnet"`, `"opus"`, `"haiku"`)
-   - `description`: short summary (e.g. "Lead agent for user-auth")
-   - `team_name`: `{TEAM_NAME}`
-   - `name`: `"lead"`
+   TeamCreate is mandatory. Do NOT skip it. Do NOT spawn any agents before
+   calling TeamCreate. It creates the team config and task list that all
+   coordination depends on.
 
-3. The lead manages all further spawning, task creation, and coordination.
-   See the prompt template's TEAM WORKFLOW section for the lead's instructions.
+2. **You are the team lead.** Follow the expanded prompt template for the
+   remainder of this session. The TEAM WORKFLOW section tells you how to
+   create tasks, spawn teammates into the team, assign work, coordinate,
+   and shut down.
 
-Do NOT output the expanded prompt as text. Do NOT describe what the lead would do.
-Call TeamCreate, then call the Agent tool to spawn the lead.
+Do NOT spawn a separate lead agent — you are the lead.
 
 ## Team Model
 
