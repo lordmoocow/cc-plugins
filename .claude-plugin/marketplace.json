@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "assemble-team",
-      "path": "plugins/assemble-team"
+      "source": "./plugins/assemble-team"
     }
   ]
 }
