@@ -14,6 +14,24 @@ plan approval gates, parallel builds, and adversarial review.
 
 **Requires:** Claude Code v2.1.32+, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` environment variable.
 
+## Critical: Tool Usage
+
+This skill uses the Claude Code Agent Teams feature to launch and coordinate
+real agent processes. Two rules apply throughout:
+
+1. **Every user-facing question MUST be asked by calling the AskUserQuestion tool.**
+   Do NOT paraphrase questions as plain text, present options in markdown, or ask
+   for confirmation via regular messages. If this skill says "ask", "present", or
+   "confirm" — that means call the AskUserQuestion tool.
+
+2. **The lead agent and all teammates MUST be spawned using Agent Teams.**
+   After expanding the prompt template, call the Agent tool to spawn the lead
+   agent — do NOT output the expanded prompt as text. The lead then spawns
+   teammates by calling the Agent tool with `subagent_type` set to each role
+   name (e.g. `subagent_type: "backend-engineer"`), which loads the agent
+   definition from `${CLAUDE_PLUGIN_ROOT}/agents/`. Teammates communicate with
+   each other and the lead via SendMessage. See the Launch section for details.
+
 ## Navigation
 
 At any step, if the user selects Other and types "back", "redo", or "start over",
@@ -215,7 +233,31 @@ The block generation rules are defined in `references/prompt-template.md` under
 "Block definitions". Read `references/role-catalogue.md` for full role descriptions
 when generating {ROLES_BLOCK} content.
 
-Output the fully expanded prompt to begin the lead agent's work.
+## Launch
+
+After expanding the prompt, spawn the lead agent using Agent Teams:
+
+1. **Spawn the lead** — call the Agent tool with:
+   - `prompt`: the fully expanded lead-agent prompt (not as text output — as the tool parameter)
+   - `model`: the confirmed model from Step 3 Question B (e.g. `"sonnet"`, `"opus"`, `"haiku"`)
+   - `description`: a short summary (e.g. "Lead agent for user-auth feature")
+
+2. **The lead spawns teammates** — the lead agent prompt instructs it to call
+   the Agent tool for each role using:
+   - `subagent_type`: the role name matching an agent file (e.g. `"backend-engineer"`,
+     `"qa-engineer"`, `"security-auditor"`)
+   - `model`: `{MODEL}` (the confirmed model choice)
+   - `prompt`: the spec context, phase assignment, and scope for that teammate
+   - `isolation`: `"worktree"` if worktree isolation was enabled in Step 3
+
+   The agent definition in `${CLAUDE_PLUGIN_ROOT}/agents/{role-name}.md` provides
+   the system prompt automatically when `subagent_type` is set.
+
+3. **Communication** — teammates and the lead exchange messages via SendMessage
+   using the agent ID returned by each Agent tool call.
+
+Do NOT output the expanded prompt as text. Do NOT describe what the lead would do.
+Actually call the Agent tool to start the process.
 
 ## Team Model
 
