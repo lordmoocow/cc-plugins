@@ -5,5 +5,10 @@
   "owner": {
     "name": "lordmoocow"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "assemble-team",
+      "path": "plugins/assemble-team"
+    }
+  ]
 }
