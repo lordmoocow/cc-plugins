@@ -14,6 +14,8 @@ MISSION
 
 Load and implement the specification at: {SPEC_PATH}
 
+{FOCUS}
+
 Read the full spec now. Your first job is to analyse what is being
 built and assemble the right team of specialists for the work ahead.
 
@@ -138,6 +140,19 @@ Do not describe what you plan to do — actually call the tools.
 ## Block definitions
 
 These are the variable blocks substituted into the template above.
+
+### {FOCUS}
+
+If the user provided focus instructions (e.g. "focus on the auth module",
+"only the webhook handlers"), render as:
+
+```
+FOCUS: {user's focus instructions, lightly cleaned up for clarity}
+The rest of the spec is context — do not assign work outside this scope.
+```
+
+If no focus instructions were provided, omit this block entirely (do not
+render an empty "FOCUS:" line).
 
 ### {ROLES_BLOCK}
 

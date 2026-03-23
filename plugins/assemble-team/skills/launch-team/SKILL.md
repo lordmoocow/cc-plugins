@@ -53,11 +53,17 @@ Before any configuration, perform these checks in order:
      - `Continue anyway` — Proceed without the variable (may fail at agent spawn)
      - `Stop` — Abort so you can set the variable and retry
 
-3. **Resolve spec** — look for a file path in the user's message (they may say
-   "implement specs/foo.md", pass `--spec path`, or just mention a filename).
-   If no path is found, use the current session plan as the spec. If neither
-   exists, use AskUserQuestion to ask the user to provide a spec file path.
+3. **Resolve spec and focus** — look for a file path in the user's message (they
+   may say "implement specs/foo.md", pass `--spec path`, or just mention a
+   filename). If no path is found, use the current session plan as the spec. If
+   neither exists, use AskUserQuestion to ask the user to provide a spec file path.
    Stop if no spec can be resolved.
+
+   Also extract any **focus instructions** — additional text in the user's message
+   beyond the file path that narrows scope (e.g. "focus on the auth module",
+   "specifically the webhook handlers", "only phase 2 items"). Store this as
+   `{FOCUS}`. If the user's message contains only a file path with no extra
+   instructions, `{FOCUS}` is empty.
 
 4. **Read and validate the spec** — attempt to load the resolved spec file. If the
    file does not exist or cannot be read, use AskUserQuestion:
@@ -220,6 +226,7 @@ With all configuration confirmed, read `${CLAUDE_PLUGIN_ROOT}/skills/launch-team
 and expand the lead-agent prompt by substituting all `{PLACEHOLDER}` values:
 
 - `{SPEC_PATH}` — resolved spec file path
+- `{FOCUS}` — user-provided focus instructions (omit block entirely if empty)
 - `{ROLES_BLOCK}` — generated from confirmed team roles, grouped by tier
 - `{ADVERSARIAL_BLOCK}` — included unless adversarial review was disabled
 - `{PHASES_BLOCK}` — generated from phase structure (with or without recon)

@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
   "name": "assemble-team",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Scaffold and launch coordinated multi-agent implementation teams from a spec file. A lead agent orchestrates specialist teammates through phased implementation with plan approval gates, parallel builds, and adversarial review."
 }
