@@ -24,13 +24,16 @@ real agent processes. Two rules apply throughout:
    for confirmation via regular messages. If this skill says "ask", "present", or
    "confirm" — that means call the AskUserQuestion tool.
 
-2. **The lead agent and all teammates MUST be spawned using Agent Teams.**
-   After expanding the prompt template, call the Agent tool to spawn the lead
-   agent — do NOT output the expanded prompt as text. The lead then spawns
-   teammates by calling the Agent tool with `subagent_type` set to each role
-   name (e.g. `subagent_type: "backend-engineer"`), which loads the agent
-   definition from `${CLAUDE_PLUGIN_ROOT}/agents/`. Teammates communicate with
-   each other and the lead via SendMessage. See the Launch section for details.
+2. **The team MUST be created with TeamCreate, teammates spawned with Agent.**
+   After expanding the prompt template:
+   a. Call TeamCreate to create the team (team_name derived from the spec)
+   b. Call the Agent tool to spawn the lead agent with `team_name` and `name: "lead"`
+   c. The lead spawns teammates using Agent with `team_name`, `name` (role name),
+      and `subagent_type` (role name) — which loads the agent definition from
+      `${CLAUDE_PLUGIN_ROOT}/agents/`
+   d. Work is coordinated via TaskCreate/TaskUpdate/TaskList, not ad-hoc messages
+   e. Teammates communicate via SendMessage using names (not agent IDs)
+   See the Launch section for the full sequence.
 
 ## Navigation
 
@@ -227,6 +230,7 @@ and expand the lead-agent prompt by substituting all `{PLACEHOLDER}` values:
 - `{COVERAGE}` — confirmed coverage target
 - `{BRANCH}` — confirmed branch name (current branch, derived from spec, or user-specified)
 - `{MODEL}` — confirmed model choice
+- `{TEAM_NAME}` — derived from spec filename in kebab-case, with a focus suffix if focus instructions are present (e.g. specs/user-auth.md → "user-auth", or with focus "webhooks" → "user-auth-webhooks")
 
 The block generation rules are defined in `references/prompt-template.md` under
 "Block definitions". Read `references/role-catalogue.md` for full role descriptions
@@ -234,29 +238,24 @@ when generating {ROLES_BLOCK} content.
 
 ## Launch
 
-After expanding the prompt, spawn the lead agent using Agent Teams:
+After expanding the prompt, create and launch the team:
 
-1. **Spawn the lead** — call the Agent tool with:
+1. **Create the team** — call TeamCreate with:
+   - `team_name`: `{TEAM_NAME}` (derived from spec filename, e.g. "user-auth")
+   - `description`: one-line summary of what the team is building
+
+2. **Spawn the lead** — call the Agent tool with:
    - `prompt`: the fully expanded lead-agent prompt (not as text output — as the tool parameter)
    - `model`: the confirmed model from Step 3 Question B (e.g. `"sonnet"`, `"opus"`, `"haiku"`)
-   - `description`: a short summary (e.g. "Lead agent for user-auth feature")
+   - `description`: short summary (e.g. "Lead agent for user-auth")
+   - `team_name`: `{TEAM_NAME}`
+   - `name`: `"lead"`
 
-2. **The lead spawns teammates** — the lead agent prompt instructs it to call
-   the Agent tool for each role using:
-   - `subagent_type`: the role name matching an agent file (e.g. `"backend-engineer"`,
-     `"qa-engineer"`, `"security-auditor"`)
-   - `model`: `{MODEL}` (the confirmed model choice)
-   - `prompt`: the spec context, phase assignment, and scope for that teammate
-   - `isolation`: `"worktree"` if worktree isolation was enabled in Step 3
-
-   The agent definition in `${CLAUDE_PLUGIN_ROOT}/agents/{role-name}.md` provides
-   the system prompt automatically when `subagent_type` is set.
-
-3. **Communication** — teammates and the lead exchange messages via SendMessage
-   using the agent ID returned by each Agent tool call.
+3. The lead manages all further spawning, task creation, and coordination.
+   See the prompt template's TEAM WORKFLOW section for the lead's instructions.
 
 Do NOT output the expanded prompt as text. Do NOT describe what the lead would do.
-Actually call the Agent tool to start the process.
+Call TeamCreate, then call the Agent tool to spawn the lead.
 
 ## Team Model
 
