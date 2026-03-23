@@ -1,0 +1,9 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lordmoocow-plugins",
+  "description": "lordmoocow's plugin marketplace",
+  "owner": {
+    "name": "lordmoocow"
+  },
+  "plugins": []
+}
