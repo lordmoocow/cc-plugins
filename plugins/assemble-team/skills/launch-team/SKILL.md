@@ -73,8 +73,8 @@ Before any configuration, perform these checks in order:
 
 ## Interactive Configuration
 
-Configure the team through three AskUserQuestion steps. Infer sensible defaults from
-the spec content, but always let the user confirm or override.
+Configure the team through the steps below. Infer sensible defaults from the spec
+content, but always let the user confirm or override.
 
 ### Step 1 — Classify spec type
 
@@ -107,40 +107,94 @@ Use the full team table below to map the confirmed type to default roles:
 | Mobile app | mobile-engineer, backend-engineer | qa-engineer, technical-writer | ux-skeptic, security-auditor, performance-devil |
 | Internal tooling / CLI | backend-engineer, platform-engineer | qa-engineer, technical-writer | architecture-critic, performance-devil |
 
-### Step 2 — Configure team roles
+### Step 2 — Analyse spec and propose team composition
 
-Based on the confirmed spec type, pre-select the default roles from the table above.
+This step dynamically determines which roles are needed and whether any should be
+combined into polyglot agents. Read `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md`
+for affinity groups, combination rules, and the decision algorithm.
 
-Present the default team for confirmation using AskUserQuestion:
+#### Step 2a — Dynamic spec analysis
 
-- **Question**: "The default team for a {TYPE} project is: {LIST}. Adjust the team?"
+After confirming the spec type in Step 1, analyse the spec content in detail:
+
+1. Identify the **work domains** involved (backend, frontend, database, infra, ML, etc.)
+2. Determine which roles from the role catalogue are actually needed for this spec —
+   drop roles that have no meaningful work (e.g. no frontend-engineer for a pure API)
+3. Map the needed roles to phases (recon, foundations, parallel build, integration,
+   hardening) based on what depends on what
+4. Count agents per phase
+5. Apply the **decision algorithm** from `polyglot-guide.md`:
+   - If any phase exceeds 5 agents, propose combinations from affinity groups
+   - If a role has light duties, suggest combining it even when under 5 agents
+   - Prioritise: most overlapping roles first, Tier 2 before Tier 1, never cross-tier
+6. Produce a phase-by-phase summary showing: which agents are active in each phase,
+   which are polyglot (and what roles they combine), and the agent count per phase
+
+**Target: 3–5 agents per phase.** This is the primary sizing constraint.
+
+#### Step 2b — Present composition to user
+
+Present the proposed team using AskUserQuestion:
+
+- **Question**: "Based on this spec, here's the suggested team:\n\n{phase-by-phase
+  summary with agent counts and any polyglot combinations explained, e.g.
+  'Phase 1: backend-engineer+database-architect (polyglot), frontend-engineer — 2 agents'}\n\n
+  Total unique agents: {N}. Adjust?"
 - **Header**: "Team"
 - **Options**:
-  - `Use defaults (Recommended)` — Use the pre-selected team as shown
-  - `Add roles` — Add additional specialists to the team
-  - `Remove roles` — Drop roles that aren't needed
-  - `Custom team` — Specify the exact roles to include
+  - `Use suggested (Recommended)` — Accept the dynamic composition as proposed
+  - `Adjust combinations` — Modify which roles are combined or split
+  - `Full specialist team` — One agent per role, no combining
+  - `Custom` — Specify exact composition manually
+
+If the user selects "Adjust combinations", present a follow-up AskUserQuestion:
+- **Question**: "Which combinations would you like to change?"
+- **Header**: "Adjust"
+- **Options** (multiSelect: true): List each proposed polyglot group as "Split
+  {roleA} + {roleB} into separate agents", plus any uncombined roles that share an
+  affinity group as "Combine {roleA} + {roleB}". Up to 4 options; the user can also
+  type custom groupings via "Other".
+
+If the user selects "Full specialist team", revert to the default specialist roles
+from the team table in Step 1 (one agent per role, no combining).
+
+If the user selects "Custom", present:
+- **Question**: "Describe your desired team composition"
+- **Header**: "Custom"
+- **Options**: Show 2 preset alternatives (e.g. "Minimal: 2–3 polyglot agents" and
+  "Balanced: 4–5 agents with selective combining") plus let the user type a custom
+  list via "Other".
+
+#### Step 2c — Role adjustment
+
+After the composition is set (from 2b), allow fine-tuning with AskUserQuestion:
+
+- **Question**: "Final team: {role list, showing polyglot groups as 'A + B'}. Make changes?"
+- **Header**: "Roles"
+- **Options**:
+  - `Looks good (Recommended)` — Proceed with this team
+  - `Add roles` — Add additional specialists
+  - `Remove roles` — Drop roles or polyglot groups that aren't needed
+  - `Custom` — Specify exact changes
 
 If the user selects "Add roles", present a follow-up AskUserQuestion:
 - **Question**: "Which roles to add?"
 - **Header**: "Add"
-- **Options**: List up to 4 roles NOT already in the default set, picking the most
-  relevant based on the spec. The user can also type custom role names via "Other".
+- **Options**: List up to 4 roles NOT already in the team (individually or via a
+  polyglot group), picking the most relevant based on the spec. The user can also
+  type custom role names via "Other".
 
 If the user selects "Remove roles", present:
 - **Question**: "Which roles to remove?"
 - **Header**: "Remove"
-- **Options**: List up to 4 roles FROM the default set (prioritise the ones least
-  relevant to the spec). Removing a role drops it entirely from the team.
-
-If the user selects "Custom team", present:
-- **Question**: "Describe your desired team composition"
-- **Header**: "Custom"
-- **Options**: Show 2 preset alternatives (e.g. "Minimal: 2 specialists + QA" and
-  "Full: all 14 roles") plus let the user type a custom list via "Other".
+- **Options**: List up to 4 roles or polyglot groups from the current team
+  (prioritise the least relevant to the spec). Removing a polyglot group drops
+  both constituent roles.
 
 **Role validation:** After any customisation, validate all role names against the
-role catalogue in `${CLAUDE_SKILL_DIR}/references/role-catalogue.md`.
+role catalogue in `${CLAUDE_SKILL_DIR}/references/role-catalogue.md`. Polyglot
+compound names (e.g. "backend-engineer+database-architect") are valid if both
+constituent roles are in the catalogue.
 If any name does not match a known role, use AskUserQuestion:
 - **Question**: "These roles aren't in the catalogue: {list}. What should we do?"
 - **Header**: "Roles"
@@ -150,7 +204,8 @@ If any name does not match a known role, use AskUserQuestion:
   - `Re-enter` — Go back to team configuration
 
 **Team completeness check:** After finalising the team, if no Tier 2 (agile) or
-no Tier 3 (adversarial) roles remain, use AskUserQuestion:
+no Tier 3 (adversarial) roles remain (counting polyglot groups that cover a tier
+as satisfying that tier), use AskUserQuestion:
 - **Question**: "Your team has no {missing tier description}. This may reduce quality. Continue?"
 - **Header**: "Warning"
 - **Options**:
@@ -273,4 +328,6 @@ Roles: architecture-critic, security-auditor, ux-skeptic, performance-devil.
 - `${CLAUDE_SKILL_DIR}/references/prompt-template.md` — Lead-agent prompt template with placeholder variables and block definitions
 - `${CLAUDE_SKILL_DIR}/references/role-catalogue.md` — Full role definitions for all three tiers
 - `${CLAUDE_SKILL_DIR}/references/plan-template.md` — Implementation specialist plan format and lead approval responses
+- `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md` — Polyglot affinity groups, decision algorithm, and spawn rules
+- `${CLAUDE_SKILL_DIR}/references/skill-map.md` — Maps roles to marketplace skills for enhanced agent capabilities
 - `${CLAUDE_PLUGIN_ROOT}/agents/` — One agent identity file per role (14 total)

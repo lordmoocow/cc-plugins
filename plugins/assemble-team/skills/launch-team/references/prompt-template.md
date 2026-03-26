@@ -100,7 +100,17 @@ for each work item. Group by phase. Example tasks:
   - "Phase 3: Security review"
 
 STEP 2 — SPAWN TEAMMATES
-Spawn each confirmed role using the Agent tool:
+Before spawning, check the available skills in your session (listed in
+system-reminder messages). Read the skill map at
+${CLAUDE_SKILL_DIR}/references/skill-map.md to identify which available
+skills are relevant to each role. Include matching skills in each
+agent's spawn prompt using the AVAILABLE SKILLS format from the skill
+map — this lets agents leverage marketplace skills the user has installed.
+
+Spawn each confirmed role using the Agent tool. Some agents may be
+polyglot (combined-role) agents — see below for both variants.
+
+Standard (single-role) agent:
 
   Agent tool parameters:
     subagent_type : the role name (e.g. "backend-engineer")
@@ -111,20 +121,42 @@ Spawn each confirmed role using the Agent tool:
                     what they own, and what they depend on
     isolation     : "worktree" (only if worktree isolation is enabled)
 
-The subagent_type loads the agent's identity and system prompt
-automatically from the plugin's agents/ directory. You do not need
-to repeat their role description — focus on the spec-specific assignment.
+Polyglot (combined-role) agent:
+
+  Agent tool parameters:
+    subagent_type : the PRIMARY role name (e.g. "backend-engineer")
+    model         : {MODEL}
+    name          : compound name (e.g. "backend-engineer+database-architect")
+    team_name     : {TEAM_NAME}
+    prompt        : the spec summary, their phase assignment,
+                    what they own from the primary role, what they
+                    depend on, PLUS the polyglot prompt supplement
+                    (see polyglot-guide.md for the exact template)
+    isolation     : "worktree" (only if worktree isolation is enabled)
+
+The subagent_type loads the primary role's identity and system prompt
+automatically from the plugin's agents/ directory. For polyglot agents,
+the spawn prompt's ADDITIONAL ROLE section grants the secondary role's
+responsibilities and overrides scope limitations from the base role.
 
 Spawn according to phase structure:
-  - Phase 0 (recon): spawn researcher and qa-engineer
+  - Phase 0 (recon): spawn researcher and/or qa-engineer (or their
+    polyglot if combined)
   - Phase 1 (foundations): spawn implementation specialists one at a
     time, approve each plan before spawning the next
   - Phase 2 (parallel build): spawn remaining specialists in parallel
   - Adversarial consultants: spawn when you need a review pass
 
+Target 3–5 agents active per phase. If a polyglot agent spans work
+in multiple phases, it remains active across those phases.
+
 STEP 3 — ASSIGN WORK
 Use TaskUpdate with `owner` set to the teammate's name to assign tasks.
 Teammates check TaskList to find their assigned work.
+
+For polyglot agents, use the compound name as the owner (e.g.
+"backend-engineer+database-architect"). Tasks that would go to either
+constituent role are assigned to the polyglot agent.
 
 STEP 4 — COORDINATE
 - Teammates message each other and you via SendMessage using names
@@ -206,7 +238,10 @@ Examples:
 Generate by listing only the confirmed roles, grouped by tier. For each
 implementation specialist, include their one-sentence scope from role-catalogue.md.
 For agile specialists, list names only. For adversarial consultants (omit entirely
-if adversarial review was disabled):
+if adversarial review was disabled).
+
+Use the **polyglot format** for any combined-role agents. Standard (single-role)
+and polyglot entries can be mixed freely within a tier.
 
 ```
 ── IMPLEMENTATION SPECIALISTS ─────────────────────────────────────────
@@ -215,12 +250,23 @@ These teammates submit a full plan for lead approval before writing code.
   • {role-name}
     {one-sentence scope from role-catalogue.md}
 
-  [repeat for each confirmed implementation specialist]
+  • {primary-role} + {secondary-role} (polyglot)
+    Primary: {one-sentence scope of primary role}
+    Also owns: {one-sentence scope of secondary role}
+    Submits ONE unified plan covering both domains.
+
+  [repeat for each confirmed implementation specialist or polyglot]
 
 ── AGILE SPECIALISTS ──────────────────────────────────────────────────
 Intent note to lead, then begin. No approval gate.
 
-  • {role-name}  [repeat for each confirmed agile specialist]
+  • {role-name}
+
+  • {primary-role} + {secondary-role} (polyglot)
+    Covers: {primary scope summary} and {secondary scope summary}
+    Sends ONE intent note covering all responsibilities.
+
+  [repeat for each confirmed agile specialist or polyglot]
 
 ── ADVERSARIAL CONSULTANTS (outside the team) ─────────────────────────
 No deliverables. Critique only. Communicate with lead exclusively.
@@ -259,10 +305,14 @@ teammates directly.
 
 If reconnaissance was disabled, begin at Phase 1. Otherwise start at Phase 0.
 
+**Agent cap: 3–5 agents active per phase.** If a polyglot agent spans work in
+multiple phases, it counts toward each phase it is active in. List polyglot
+agents by their compound name in phase descriptions.
+
 Default with reconnaissance:
 ```
 Phase 0 — Reconnaissance
-  researcher and qa-engineer review the spec.
+  researcher and qa-engineer review the spec (or their polyglot if combined).
   Output: findings doc that feeds into all plans.
 
 Phase 1 — Foundations
@@ -285,3 +335,5 @@ Invariants (always include regardless of phase count):
 - Phase 1 (or first implementation phase) never starts without plan approval.
 - The final integration phase never starts without adversarial review.
   (Omit this invariant if adversarial review was disabled.)
+- No phase should have more than 5 active agents. If a phase would exceed
+  this, revisit the team composition for additional polyglot opportunities.

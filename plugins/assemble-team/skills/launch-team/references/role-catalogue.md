@@ -101,3 +101,13 @@ Stress-tests throughput, latency, and cost assumptions. Looks for N+1 query
 patterns, missing indexes, synchronous operations that should be async, missing
 caching on expensive reads, unbounded allocations, and third-party calls that
 will bottleneck under load. Central question: what breaks first at 10x traffic?
+
+---
+
+## Polyglot (combined-role) agents
+
+Some roles can be combined into a single polyglot agent when the spec doesn't
+warrant dedicated specialists. See `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md`
+for affinity constraints, the decision algorithm, and spawn rules. The individual
+role definitions above remain the authoritative scope descriptions — polyglot
+agents inherit scope from each constituent role as defined here.
