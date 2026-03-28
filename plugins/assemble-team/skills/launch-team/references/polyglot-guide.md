@@ -1,63 +1,92 @@
 # Polyglot guide
 
-Polyglot agents combine closely related roles into a single agent to reduce team
-size. This file defines which roles can combine (affinity constraints), when to
-combine them (decision algorithm), and how to spawn them (spawn rules).
+Polyglot agents combine related roles into a single agent to reduce team size.
+This file defines the principles for combining roles, when to do it, and how
+to spawn polyglot agents.
 
-Combinations are **dynamic** — determined by analysing the spec, not by fixed
-lookup tables. The affinity groups below define what is **permitted**; the
-decision algorithm determines what is **recommended** for a given spec.
+Combinations are **fully dynamic** — you (the lead) analyse the spec and compose
+the most appropriate blend for each phase. There are no fixed combo menus or
+pair tables. The principles below tell you what is permitted and what makes a
+good blend; the decision algorithm tells you when to apply it.
 
 ---
 
-## Affinity groups
+## Compatibility principles
 
-Roles that can be combined into a single polyglot agent. The primary role
-determines the agent identity (`subagent_type` and system prompt). The secondary
-role's responsibilities are injected into the spawn prompt.
+Roles within the same tier can be combined freely. The question is not *which
+roles are allowed* but *which blend best serves this spec*.
 
-### Tier 1 (implementation specialists)
+### Tier 1 — Implementation specialists
 
-| Group | Primary | Secondary | When to combine |
-|---|---|---|---|
-| Backend + DB | backend-engineer | database-architect | Schema work is straightforward or tightly coupled with API design |
-| Backend + Mobile | backend-engineer | mobile-engineer | API is purpose-built for the mobile client; little standalone backend logic |
-| Infra + Platform | devops-engineer | platform-engineer | Shared infra concerns with developer tooling; no large platform SDK needed |
-| ML + Backend | ml-engineer | backend-engineer | ML serving is the core backend; little non-ML business logic |
+Roles that share data flows, API contracts, or infrastructure concerns are
+natural candidates. The heavier the workload overlap in the spec, the better
+the blend.
 
-### Tier 2 (agile specialists)
+**Signals that roles should combine:**
+- One role has light duties in this spec (e.g. schema is trivial → fold database
+  into backend)
+- Two or more roles work on tightly coupled output (e.g. backend API exists
+  solely to serve the mobile client → combine them)
+- Separating roles would create more coordination overhead than value
 
-| Group | Primary | Secondary | When to combine |
-|---|---|---|---|
-| QA + Docs | qa-engineer | technical-writer | Documentation needs are modest; test suite and docs can be maintained together |
-| QA + Research | qa-engineer | researcher | Investigation and validation are tightly coupled (e.g. evaluating libraries while testing) |
-| Research + Docs | researcher | technical-writer | Research findings feed directly into documentation; little separate test work |
+**Examples** (illustrative, not prescriptive):
+- `backend-engineer + database-architect` — when schema work is straightforward
+  or tightly coupled with API design
+- `backend-engineer + database-architect + mobile-engineer` — for API-centric
+  mobile apps where the backend is purpose-built for the client
+- `ml-engineer + backend-engineer` — when ML serving is the core backend with
+  little non-ML business logic
+- `devops-engineer + platform-engineer` — shared infra concerns with developer
+  tooling and no large standalone platform SDK
+
+### Tier 2 — Agile specialists
+
+All three agile roles (qa-engineer, technical-writer, researcher) are fully
+compatible with each other. Combine any or all based on how much independent
+work each has in the spec.
+
+**Examples:**
+- `qa-engineer + technical-writer` — when documentation needs are modest
+- `qa-engineer + researcher` — when investigation and test validation are
+  tightly coupled
+- `qa-engineer + technical-writer + researcher` — for focused specs where a
+  single agile agent can handle all three responsibilities
+
+### Tier 3 — Adversarial consultants
+
+Adversarial roles can combine when the phase budget requires it or when the
+spec's review surface is narrow enough that one agent can cover multiple lenses
+effectively. Structure the verdict with sub-sections per lens, each with its
+own PASS / CONCERNS / BLOCK rating.
+
+**Examples:**
+- `architecture-critic + security-auditor` — for backend-heavy specs where
+  architecture and security concerns overlap
+- `architecture-critic + security-auditor + performance-devil` — when a single
+  comprehensive review pass is more efficient than three separate ones
+- `architecture-critic + security-auditor + performance-devil + ux-skeptic` —
+  full review panel for tight phase budgets
 
 ### Cross-tier combinations
 
-Cross-tier combinations (e.g. Tier 1 + Tier 2, or Tier 1 + Tier 3) are **not
-permitted**. Each tier has a distinct protocol — plan-gated, intent-note, or
-critique-only — and mixing them creates ambiguity about which protocol the
-polyglot agent follows.
-
-### Tier 3 (adversarial consultants)
-
-Tier 3 roles are **not combined with each other by default**. Each adversarial
-consultant has a distinct review lens (architecture, security, UX, performance)
-and the phase budget usually allows them to remain separate. Only combine Tier 3
-roles if the phase would otherwise exceed 5 agents after all other affinity
-groups have been exhausted — and flag this to the user as a tradeoff.
+Cross-tier combinations are **not permitted**. Each tier follows a distinct
+protocol — plan-gated (Tier 1), intent-note (Tier 2), or critique-only
+(Tier 3) — and mixing them creates ambiguity about which protocol the polyglot
+agent follows.
 
 ---
 
-## Combination rules
+## Combination principles
 
-1. A role appears in **at most one** polyglot group per team
-2. Maximum **2 roles** per polyglot agent (keeps focus manageable)
-3. The primary role determines `subagent_type` (loads that agent's identity file)
-4. Tier 1 + Tier 1 is valid; Tier 2 + Tier 2 is valid; cross-tier is not
-5. Tier 3 roles stay separate unless the phase budget absolutely requires combining
-6. If a role has no meaningful work in the spec, **drop it** rather than combining
+1. A role appears in **at most one** polyglot per team
+2. The **primary role** is whichever has the heaviest workload in the spec —
+   it determines `subagent_type` (loads that agent's identity and system prompt)
+3. Stay **within tier** — no mixing plan-gated with intent-note or critique-only
+4. **No cap** on roles per polyglot — combine as many as the spec warrants
+5. If a role has **no meaningful work** in the spec, drop it entirely rather
+   than adding it to a polyglot
+6. Prefer **fewer, broader agents** over many thin ones — a polyglot with three
+   roles and clear ownership is better than three agents with 20% utilisation
 
 ---
 
@@ -68,20 +97,25 @@ Apply this per phase when proposing the team composition:
 ```
 For each phase:
   1. List the roles active in this phase.
-  2. If count <= 5: no combining needed — use individual specialists.
-  3. If count > 5: propose combinations from affinity groups, prioritising:
-     a. Roles with the most overlap in this spec's requirements.
-     b. Roles where one has light duties (e.g. simple schema → combine DB
-        into backend).
-     c. Tier 2 roles first (agile specialists combine with least friction).
-  4. Continue combining until phase agent count is 3–5.
-  5. If still > 5 after exhausting affinity groups: drop lowest-value roles
-     and flag the tradeoff to the user.
+  2. For each role, assess its workload in the spec:
+     - Heavy: dedicated specialist justified
+     - Moderate: could combine if a natural partner exists
+     - Light: strong candidate for combining or dropping
+  3. Identify roles with overlapping concerns, shared data flows,
+     or tight coordination requirements — these are blend candidates.
+  4. Compose polyglots from blend candidates within the same tier.
+     Choose the primary role (heaviest workload in the blend).
+  5. Check agent count for the phase:
+     - 3–5 agents: good — proceed
+     - > 5 agents: combine more aggressively or drop light-duty roles
+     - < 3 agents: fine if the spec is focused; no need to inflate
+  6. If still > 5 after combining, drop lowest-value roles and flag
+     the tradeoff to the user.
 ```
 
-Also consider: if a role has very light duties in the spec, suggest combining it
-even when the phase is already under 5 agents. Fewer agents with broader scope
-is preferable to many agents with thin responsibilities.
+Also consider: if a role has light duties, suggest combining it even when the
+phase is already under 5 agents. Fewer agents with broader scope is preferable
+to many agents with thin responsibilities.
 
 ---
 
@@ -94,7 +128,7 @@ Agent tool parameters:
   subagent_type : the PRIMARY role name (e.g. "backend-engineer")
   model         : {MODEL}
   name          : compound name using + separator
-                  (e.g. "backend-engineer+database-architect")
+                  (e.g. "qa-engineer+technical-writer+researcher")
   team_name     : {TEAM_NAME}
   prompt        : [standard assignment] + [polyglot supplement below]
   isolation     : "worktree" (only if worktree isolation is enabled)
@@ -102,28 +136,46 @@ Agent tool parameters:
 
 ### Polyglot prompt supplement
 
-Append this to the standard spawn prompt for the primary role:
+Append one `ADDITIONAL ROLE` block per extra role to the standard spawn prompt.
 
 **For Tier 1 (implementation) polyglots:**
 
 ```
-ADDITIONAL ROLE: {secondary-role-name}
+ADDITIONAL ROLE: {extra-role-name}
 Your scope is expanded to also include: {full scope description from
-role-catalogue.md for the secondary role}. This overrides any scope
-limitations in your base role that would exclude this work.
+role-catalogue.md for this role}. This overrides any scope limitations
+in your base role that would exclude this work.
 
-Submit ONE unified plan covering both domains. Your Scope section must
-explicitly list what you own from each role. If the domains conflict,
+[repeat for each additional role]
+
+Submit ONE unified plan covering ALL domains you own. Your Scope section
+must explicitly list what you own from each role. If any domains conflict,
 flag the conflict in your plan for lead resolution.
 ```
 
 **For Tier 2 (agile) polyglots:**
 
 ```
-ADDITIONAL ROLE: {secondary-role-name}
+ADDITIONAL ROLE: {extra-role-name}
 Your scope is expanded to also include: {full scope description from
-role-catalogue.md for the secondary role}.
+role-catalogue.md for this role}.
+
+[repeat for each additional role]
 
 Send ONE intent note covering all your responsibilities. Prioritise
 the work that unblocks implementation specialists first.
+```
+
+**For Tier 3 (adversarial) polyglots:**
+
+```
+ADDITIONAL REVIEW LENS: {extra-role-name}
+Also review from this perspective: {full scope description from
+role-catalogue.md for this role}.
+
+[repeat for each additional lens]
+
+Deliver ONE verdict per review pass. Structure it with sub-sections
+for each lens. Each sub-section gets its own PASS / CONCERNS / BLOCK
+rating. The overall verdict is the most severe of the sub-ratings.
 ```

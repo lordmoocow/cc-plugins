@@ -126,18 +126,20 @@ Polyglot (combined-role) agent:
   Agent tool parameters:
     subagent_type : the PRIMARY role name (e.g. "backend-engineer")
     model         : {MODEL}
-    name          : compound name (e.g. "backend-engineer+database-architect")
+    name          : compound name using + separator
+                    (e.g. "backend-engineer+database-architect+mobile-engineer"
+                     or "qa-engineer+technical-writer+researcher")
     team_name     : {TEAM_NAME}
     prompt        : the spec summary, their phase assignment,
                     what they own from the primary role, what they
-                    depend on, PLUS the polyglot prompt supplement
-                    (see polyglot-guide.md for the exact template)
+                    depend on, PLUS one ADDITIONAL ROLE block per
+                    extra role (see polyglot-guide.md for the template)
     isolation     : "worktree" (only if worktree isolation is enabled)
 
 The subagent_type loads the primary role's identity and system prompt
 automatically from the plugin's agents/ directory. For polyglot agents,
-the spawn prompt's ADDITIONAL ROLE section grants the secondary role's
-responsibilities and overrides scope limitations from the base role.
+the spawn prompt's ADDITIONAL ROLE sections grant each extra role's
+responsibilities and override scope limitations from the base role.
 
 Spawn according to phase structure:
   - Phase 0 (recon): spawn researcher and/or qa-engineer (or their
@@ -155,8 +157,8 @@ Use TaskUpdate with `owner` set to the teammate's name to assign tasks.
 Teammates check TaskList to find their assigned work.
 
 For polyglot agents, use the compound name as the owner (e.g.
-"backend-engineer+database-architect"). Tasks that would go to either
-constituent role are assigned to the polyglot agent.
+"backend-engineer+database-architect+mobile-engineer"). Tasks that
+would go to any constituent role are assigned to the polyglot agent.
 
 STEP 4 — COORDINATE
 - Teammates message each other and you via SendMessage using names
@@ -250,10 +252,11 @@ These teammates submit a full plan for lead approval before writing code.
   • {role-name}
     {one-sentence scope from role-catalogue.md}
 
-  • {primary-role} + {secondary-role} (polyglot)
+  • {primary-role} + {roleB} [+ {roleC} ...] (polyglot)
     Primary: {one-sentence scope of primary role}
-    Also owns: {one-sentence scope of secondary role}
-    Submits ONE unified plan covering both domains.
+    Also owns: {one-sentence scope of roleB}
+    [Also owns: {one-sentence scope of roleC}]
+    Submits ONE unified plan covering all domains.
 
   [repeat for each confirmed implementation specialist or polyglot]
 
@@ -262,8 +265,8 @@ Intent note to lead, then begin. No approval gate.
 
   • {role-name}
 
-  • {primary-role} + {secondary-role} (polyglot)
-    Covers: {primary scope summary} and {secondary scope summary}
+  • {primary-role} + {roleB} [+ {roleC} ...] (polyglot)
+    Covers: {scope summary for each constituent role}
     Sends ONE intent note covering all responsibilities.
 
   [repeat for each confirmed agile specialist or polyglot]

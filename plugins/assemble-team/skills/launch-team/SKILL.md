@@ -111,7 +111,7 @@ Use the full team table below to map the confirmed type to default roles:
 
 This step dynamically determines which roles are needed and whether any should be
 combined into polyglot agents. Read `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md`
-for affinity groups, combination rules, and the decision algorithm.
+for compatibility principles, combination guidance, and the decision algorithm.
 
 #### Step 2a — Dynamic spec analysis
 
@@ -124,9 +124,10 @@ After confirming the spec type in Step 1, analyse the spec content in detail:
    hardening) based on what depends on what
 4. Count agents per phase
 5. Apply the **decision algorithm** from `polyglot-guide.md`:
-   - If any phase exceeds 5 agents, propose combinations from affinity groups
+   - Identify roles with overlapping concerns or light duties — compose polyglots
+     from same-tier roles, choosing the heaviest-workload role as primary
+   - If any phase exceeds 5 agents, combine more aggressively or drop light-duty roles
    - If a role has light duties, suggest combining it even when under 5 agents
-   - Prioritise: most overlapping roles first, Tier 2 before Tier 1, never cross-tier
 6. Produce a phase-by-phase summary showing: which agents are active in each phase,
    which are polyglot (and what roles they combine), and the agent count per phase
 
@@ -138,7 +139,8 @@ Present the proposed team using AskUserQuestion:
 
 - **Question**: "Based on this spec, here's the suggested team:\n\n{phase-by-phase
   summary with agent counts and any polyglot combinations explained, e.g.
-  'Phase 1: backend-engineer+database-architect (polyglot), frontend-engineer — 2 agents'}\n\n
+  'Phase 1: backend-engineer+database-architect+mobile-engineer (polyglot),
+  qa-engineer+technical-writer+researcher (polyglot) — 2 agents'}\n\n
   Total unique agents: {N}. Adjust?"
 - **Header**: "Team"
 - **Options**:
@@ -151,9 +153,9 @@ If the user selects "Adjust combinations", present a follow-up AskUserQuestion:
 - **Question**: "Which combinations would you like to change?"
 - **Header**: "Adjust"
 - **Options** (multiSelect: true): List each proposed polyglot group as "Split
-  {roleA} + {roleB} into separate agents", plus any uncombined roles that share an
-  affinity group as "Combine {roleA} + {roleB}". Up to 4 options; the user can also
-  type custom groupings via "Other".
+  {compound name} into separate agents", plus any uncombined same-tier roles as
+  "Combine {roleA} + {roleB} [+ ...]". Up to 4 options; the user can also type
+  custom groupings via "Other".
 
 If the user selects "Full specialist team", revert to the default specialist roles
 from the team table in Step 1 (one agent per role, no combining).
@@ -328,6 +330,6 @@ Roles: architecture-critic, security-auditor, ux-skeptic, performance-devil.
 - `${CLAUDE_SKILL_DIR}/references/prompt-template.md` — Lead-agent prompt template with placeholder variables and block definitions
 - `${CLAUDE_SKILL_DIR}/references/role-catalogue.md` — Full role definitions for all three tiers
 - `${CLAUDE_SKILL_DIR}/references/plan-template.md` — Implementation specialist plan format and lead approval responses
-- `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md` — Polyglot affinity groups, decision algorithm, and spawn rules
+- `${CLAUDE_SKILL_DIR}/references/polyglot-guide.md` — Polyglot compatibility principles, decision algorithm, and spawn rules
 - `${CLAUDE_SKILL_DIR}/references/skill-map.md` — Maps roles to marketplace skills for enhanced agent capabilities
 - `${CLAUDE_PLUGIN_ROOT}/agents/` — One agent identity file per role (14 total)
